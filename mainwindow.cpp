@@ -1,10 +1,35 @@
+#include <sstream>
+#include <string>
+#include <iostream>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "player.h"
+#include "computer.h"
+using namespace std;
+
+Player* g_player = new Player();
+Computer* g_computer = new Computer();
+double g_timer;
+ostringstream g_oss;
+string g_str;
+QString g_qstr;
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow){
     ui->setupUi(this);
-    setFixedSize(SIZE,SIZE);
+    // add menu
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateTimer1(QString)));
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateTimer2(QString)));
+    timer->start(1);
+
+    StatusSize = 400;
+    //QTextEdit *center = new QTextEdit(this);
+    //center->setReadOnly(true);
+    //center->setMinimumSize(SIZE, SIZE);
+    //setCentralWidget(center);
+    setWindowTitle("Five");
+    setFixedSize(SIZE + StatusSize, SIZE);
     this->xPressed = 0;
     this->yPressed = 0;
     this->chessCounts = 0;
@@ -15,10 +40,168 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             chessBoard[i][j] = 0;
         }
     }
+    setupMenuBar();
+    //setupStatus();
+    // player first
+    g_player->timerStart();
 }
 
 MainWindow::~MainWindow(){
     delete ui;
+}
+
+void MainWindow::setupMenuBar(void)
+{
+    QMenuBar *MenuBar = new QMenuBar(this);
+
+    QMenu *GameMenu = new QMenu(tr("Game"), MenuBar);
+    QMenu *ModeMenu = new QMenu(tr("Mode"), MenuBar);
+    QMenu *AboutMenu = new QMenu(tr("About"), MenuBar);
+
+    QToolBar *GameToolBar = addToolBar(tr("New Game"));
+    /// set game menu
+    // add action
+    const QIcon newIcon = QIcon::fromTheme("document-new", QIcon(":/icon/new.png"));
+    QAction *newGame = new QAction(newIcon, tr("New Game"), GameMenu);
+    QAction *openGame = new QAction(tr("Open Game"), GameMenu);
+    const QIcon saveIcon = QIcon::fromTheme("document-save", QIcon(":/icon/save.png"));
+    QAction *saveGame = new QAction(saveIcon, tr("Save Game"), GameMenu);
+    QAction *quitGame = new QAction(tr("Quit Game"), GameMenu);
+    GameMenu->addAction(newGame);
+    GameMenu->addAction(openGame);
+    GameMenu->addAction(saveGame);
+    GameMenu->addAction(quitGame);
+
+    // add menu
+    MenuBar->addMenu(GameMenu);
+
+    // connect
+    connect(newGame, SIGNAL(triggered(bool)), this, SLOT(newGame()));
+    connect(openGame, SIGNAL(triggered(bool)), this, SLOT(openGame()));
+    connect(saveGame, SIGNAL(triggered(bool)), this, SLOT(saveGame()));
+    connect(quitGame, SIGNAL(triggered(bool)), this, SLOT(quitGame()));
+
+    // set game toolbar
+    GameToolBar->addAction(newGame);
+    GameToolBar->addAction(saveGame);
+
+    /// set mode menu
+    // add action
+    QAction *easyMode = new QAction("Easy", ModeMenu);
+    QAction *middleMode = new QAction("Middle", ModeMenu);
+    QAction *difficultMode = new QAction("Difficult", ModeMenu);
+    ModeMenu->addAction(easyMode);
+    ModeMenu->addAction(middleMode);
+    ModeMenu->addAction(difficultMode);
+
+    // add menu
+    MenuBar->addMenu(ModeMenu);
+
+    // connect
+    connect(easyMode, SIGNAL(triggered(bool)), this, SLOT(setEsayMode()));
+    connect(middleMode, SIGNAL(triggered(bool)), this, SLOT(setMiddleMode()));
+    connect(difficultMode, SIGNAL(triggered(bool)), this, SLOT(setDifficultMode()));
+
+    /// set about menu
+    // add action
+    QAction *aboutInfo = new QAction("About", AboutMenu);
+    AboutMenu->addAction(aboutInfo);
+    // add menu
+    MenuBar->addMenu(AboutMenu);
+    // connect
+    connect(aboutInfo, SIGNAL(triggered(bool)), this, SLOT(showAbout()));
+
+    // set menubar
+    setMenuBar(MenuBar);
+}
+
+void MainWindow::setupStatus()
+{
+    QDockWidget *dock = new QDockWidget(tr("Computer"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+
+    QDateTime time = QDateTime::currentDateTime();
+    QString str = time.toString("yyyy-MM-dd hh:mm:ss dddd");
+    QListWidget *infoComputer;
+    infoComputer = new QListWidget(dock);
+    infoComputer->addItems(QStringList()
+                       << "Time: "
+                       << str);
+    ui->timeComputer->setText(str);
+    dock->setWidget(infoComputer);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+
+    // player
+    dock = new QDockWidget(tr("Player"), this);
+    QListWidget *infoPlayer;
+
+    infoPlayer = new QListWidget(dock);
+    infoPlayer->addItems(QStringList()
+                         << "Time: "
+                         << str);
+    dock->setWidget(infoPlayer);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+    ui->timePlayer->setText(str);
+}
+
+void MainWindow::timeUpdate()
+{
+    //ui->timeComputer->setText();
+    //ui->timePlayer->setText();
+}
+
+void MainWindow::newGame(void)
+{
+
+}
+
+void MainWindow::openGame(void)
+{
+
+}
+
+void MainWindow::saveGame(void)
+{
+
+}
+
+void MainWindow::quitGame(void)
+{
+
+}
+
+void MainWindow::setEsayMode()
+{
+
+}
+
+void MainWindow::setMiddleMode()
+{
+
+}
+
+void MainWindow::setDifficultMode()
+{
+
+}
+
+void MainWindow::showAbout()
+{
+
+}
+
+void MainWindow::updateTimer1(const QString qstr)
+{
+    ui->timeComputer->clear();
+    ui->timeComputer->setText(qstr);
+    ui->lcdComputer->display(qstr);
+}
+
+void MainWindow::updateTimer2(const QString qstr)
+{
+    ui->timePlayer->clear();
+    ui->timePlayer->setText(qstr);
+    ui->lcdPlayer->display(qstr);
 }
 
 void MainWindow::paintEvent(QPaintEvent *){
@@ -110,9 +293,28 @@ void MainWindow::mousePressEvent(QMouseEvent *mouseEvent)
         //this->chessBoard[int((x-X)*1.0/CHECK_WIDTH+0.5)][int((y-Y)*1.0/CHECK_WIDTH+0.5)] = (this->chessCounts%2 == 1)?1:-1;
 
         this->chessBoard[int((x-X)*1.0/CHECK_WIDTH+0.5)][int((y-Y)*1.0/CHECK_WIDTH+0.5)] = 1;
+        g_player->timerStop();
+        g_timer = g_player->getTimer();
+        g_oss.str("");
+        g_oss << g_timer;
+        g_str = g_oss.str();
+        g_qstr = QString::fromStdString(g_str);
+        updateTimer2(g_qstr);
+        //ui->timePlayer->setText(g_qstr);
         this->update();
+        g_computer->timerStart();
         computer();
+        g_computer->timerStop();
+        g_timer = g_computer->getTimer();
+        g_oss.str("");
+        g_oss << g_timer;
+        g_str = g_oss.str();
+        g_qstr = QString::fromStdString(g_str);
+        //ui->timeComputer->setText(g_qstr);
+        updateTimer1(g_qstr);
         this->update();      //update the window
+        g_player->timerStart();
+        cout << g_player->getTimer() << "; " << g_computer->getTimer() << endl;
     }
     if(is_win() ==1){
         QMessageBox::information(NULL, "Game Over", "Black Win!", QMessageBox::Yes, QMessageBox::Yes);

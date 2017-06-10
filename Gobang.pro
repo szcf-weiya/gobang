@@ -24,11 +24,20 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    game.cpp \
+    computer.cpp \
+    player.cpp \
+    test.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    game.h \
+    computer.h \
+    player.h \
+    test.h
 
 FORMS    += mainwindow.ui
 
 RESOURCES += \
     res.qrc
+
