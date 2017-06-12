@@ -15,10 +15,13 @@
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QTimer>
+#include <QFileDialog>
 #include <qdatetime.h>
+#include "game.h"
 #include "player.h"
 #include "computer.h"
-
+#include<iostream>
+#include <cstdlib>
 namespace Ui {
 class MainWindow;
 }
@@ -61,8 +64,8 @@ private:
     int yPressed;
     int chessCounts;
     int counts[225][3];
-    int chessBoard[15][15];//Simulated chessboard; 1:Black,-1:White 0:None
-
+    int chessboard[15][15];//Simulated chessboard; 1:Black,-1:White 0:None
+    Game game;
     // menu
     void setupMenuBar(void);
     void setupToolBar(void);

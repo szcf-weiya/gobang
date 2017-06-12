@@ -1,10 +1,13 @@
 #include <sstream>
 #include <string>
+#include <fstream>
 #include <iostream>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "player.h"
 #include "computer.h"
+#include <ctime>
+#include <iomanip>
 using namespace std;
 
 Player* g_player = new Player();
@@ -18,10 +21,10 @@ QString g_qstr;
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow){
     ui->setupUi(this);
     // add menu
-    QTimer *timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), this, SLOT(updateTimer1(QString)));
-    connect(timer, SIGNAL(timeout()), this, SLOT(updateTimer2(QString)));
-    timer->start(1);
+    //QTimer *timer = new QTimer(this);
+    //connect(timer, SIGNAL(timeout()), this, SLOT(updateTimer1(QString)));
+    //connect(timer, SIGNAL(timeout()), this, SLOT(updateTimer2(QString)));
+    //timer->start(1000);
 
     StatusSize = 400;
     //QTextEdit *center = new QTextEdit(this);
@@ -33,13 +36,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     this->xPressed = 0;
     this->yPressed = 0;
     this->chessCounts = 0;
-    for(int i=0;i<15;i++)
-    {
-        for(int j=0;j<15;j++)
-        {
-            chessBoard[i][j] = 0;
-        }
-    }
+    /*
+    chessboard = (int**)malloc(sizeof(int*)*15);
+    for (int i = 0; i < 15; i++)
+        chessboard[i] = (int*)malloc(sizeof(int)*15);
+*/
+    for (int i = 0; i < 15; i++)
+        for (int j = 0; j < 15; j++)
+            chessboard[i][j] = 0;
+    game.getStatus(chessboard);
     setupMenuBar();
     //setupStatus();
     // player first
@@ -152,22 +157,100 @@ void MainWindow::timeUpdate()
 
 void MainWindow::newGame(void)
 {
-
+    game.clear(); // clear the records
+    game.getStatus(chessboard);
+    this->update();
 }
 
 void MainWindow::openGame(void)
 {
+    QString path = QFileDialog::getOpenFileName(this,
+                                                tr("Open Game"),
+                                                ".",
+                                                tr("Text Files(*.txt)"));
+    if (!path.isEmpty())
+    {
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)){
+            QMessageBox::warning(this,
+                                 tr("Read Game File"),
+                                 tr("Cannot open file:\n%1").arg(path));
+            return;
+        }
+        QTextStream in(&file);
+
+        stringstream ss;
+        QString qstr;
+        string str;
+        qstr = in.readLine();
+        str = qstr.toStdString();
+
+        //ss << in.readAll();
+        cout << str << endl;
+        file.close();
+
+    }
+    else
+    {
+        QMessageBox::warning(this,
+                             tr("Path"),
+                             tr("You have not select any file."));
+    }
 
 }
 
 void MainWindow::saveGame(void)
 {
+    string filename;
+    stringstream ss;
+    struct tm * timeinfo;
+    time_t rawtime;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    ss << timeinfo->tm_year + 1900 ;
 
+    ss << setw(2) << setfill('0') << timeinfo->tm_mon + 1;
+    ss << setw(2) << setfill('0') << timeinfo->tm_mday;
+    ss << setw(2) << setfill('0') << timeinfo->tm_hour;
+    ss << setw(2) << setfill('0') << timeinfo->tm_min;
+    ss << setw(2) << setfill('0') << timeinfo->tm_sec;
+    filename = "gobang_" + ss.str() + ".txt";
+    cout << filename << endl;
+    cout <<  asctime(timeinfo) << endl;
+    QString path = QFileDialog::getSaveFileName(this,
+                                                tr("Open Game File"),
+                                                ".",
+                                                tr("Text Files(*.txt)"));
+    if (!path.isEmpty())
+    {
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            QMessageBox::warning(this,
+                                 tr("Save Game"),
+                                 tr("Cannot open file\n%1").arg(path));
+            return;
+        }
+        QTextStream out(&file);
+        for (int j = 0; j < 15; j++)
+        {
+            for (int i = 0; i < 15; i++)
+                out << chessboard[i][j] << " ";
+            out << endl;
+        }
+        file.close();
+    }
+    else
+    {
+        QMessageBox::warning(this,
+                             tr("Path"),
+                             tr("You did not select any file."));
+    }
 }
 
 void MainWindow::quitGame(void)
 {
-
+    this->close();
 }
 
 void MainWindow::setEsayMode()
@@ -187,7 +270,7 @@ void MainWindow::setDifficultMode()
 
 void MainWindow::showAbout()
 {
-
+    QMessageBox::information(NULL, "About", "OOP project by ...", QMessageBox::Yes, QMessageBox::Yes);
 }
 
 void MainWindow::updateTimer1(const QString qstr)
@@ -205,6 +288,9 @@ void MainWindow::updateTimer2(const QString qstr)
 }
 
 void MainWindow::paintEvent(QPaintEvent *){
+    // get the current status
+    //game.getStatus(chessboard);
+
     QPainter paint(this);
     paint.setRenderHint(QPainter::Antialiasing,true);
     //background
@@ -269,10 +355,10 @@ void MainWindow::paintEvent(QPaintEvent *){
             for(short j = 0; j < 15; j++){
                 pos_x = X-radix/2+CHECK_WIDTH*i;
                 pos_y = Y-radix/2+CHECK_WIDTH*j;
-                if(chessBoard[i][j]==1){
+                if(chessboard[i][j]==1){
                     paint.drawImage(pos_x,pos_y,black_chess);
                 }
-                else if(chessBoard[i][j]==-1){
+                else if(chessboard[i][j]==-1){
                     paint.drawImage(pos_x,pos_y,white_chess);
                 }
             }
@@ -285,14 +371,14 @@ void MainWindow::mousePressEvent(QMouseEvent *mouseEvent)
     int x = mouseEvent->x();
     int y = mouseEvent->y();
 
-    if(x>0&&x<SIZE&&y>0&&y<SIZE&&this->chessBoard[int((x-X)*1.0/CHECK_WIDTH+0.5)][int((y-Y)*1.0/CHECK_WIDTH+0.5)]==0)
+    if(x>0&&x<SIZE&&y>0&&y<SIZE&&this->chessboard[int((x-X)*1.0/CHECK_WIDTH+0.5)][int((y-Y)*1.0/CHECK_WIDTH+0.5)]==0)
     {
         this->chessCounts += 1;
 
         //2 players
         //this->chessBoard[int((x-X)*1.0/CHECK_WIDTH+0.5)][int((y-Y)*1.0/CHECK_WIDTH+0.5)] = (this->chessCounts%2 == 1)?1:-1;
 
-        this->chessBoard[int((x-X)*1.0/CHECK_WIDTH+0.5)][int((y-Y)*1.0/CHECK_WIDTH+0.5)] = 1;
+        this->chessboard[int((x-X)*1.0/CHECK_WIDTH+0.5)][int((y-Y)*1.0/CHECK_WIDTH+0.5)] = 1;
         g_player->timerStop();
         g_timer = g_player->getTimer();
         g_oss.str("");
@@ -316,11 +402,14 @@ void MainWindow::mousePressEvent(QMouseEvent *mouseEvent)
         g_player->timerStart();
         cout << g_player->getTimer() << "; " << g_computer->getTimer() << endl;
     }
+
     if(is_win() ==1){
+        cout << "is win" << endl;
         QMessageBox::information(NULL, "Game Over", "Black Win!", QMessageBox::Yes, QMessageBox::Yes);
         this->close();
     }
     else if(is_win()==-1){
+        cout << "is not win" << endl;
         QMessageBox::information(NULL, "Game Over", "White Win!", QMessageBox::Yes, QMessageBox::Yes);
         this->close();
     }
@@ -339,7 +428,7 @@ int MainWindow::is_win(){
     //  left-right
     for(int i = 0;i<len;i++){
         for(int j=0;j<len;j++){
-            switch(chessBoard[j][i]){
+            switch(chessboard[j][i]){
             case 1:line[j]='1';break;
             case 0:line[j]='2';break;
             case -1:line[j]='0';break;
@@ -360,7 +449,7 @@ int MainWindow::is_win(){
     if(!left_right){
         for(int i = 0;i<len;i++){
             for(int j=0;j<len;j++){
-                switch(chessBoard[i][j]){
+                switch(chessboard[i][j]){
                 case 1:line[j]='1';break;
                 case 0:line[j]='2';break;
                 case -1:line[j]='0';break;
@@ -382,7 +471,7 @@ int MainWindow::is_win(){
     if((!left_right)||(!up_down)){
         for(int i = 4;i<len;i++){
             for(int j = 0;j<i+1;j++){
-                switch(chessBoard[len-(i-j)][j]){
+                switch(chessboard[len-(i-j)][j]){
                 case 1:line[j]='1';break;
                 case 0:line[j]='2';break;
                 case -1:line[j]='0';break;
@@ -400,7 +489,7 @@ int MainWindow::is_win(){
             }
 
             for(int j = 0;j<i+1;j++){
-                switch(chessBoard[i-j][len-j]){
+                switch(chessboard[i-j][len-j]){
                 case 1:line[j]='1';break;
                 case 0:line[j]='2';break;
                 case -1:line[j]='0';break;
@@ -423,7 +512,7 @@ int MainWindow::is_win(){
     if((!left_right)||(!up_down)||(!leftUp_rightDown)){
         for(int i = 4;i<len;i++){
             for(int j = 0;j<i+1;j++){
-                switch(chessBoard[i-j][j]){
+                switch(chessboard[i-j][j]){
                 case 1:line[j]='1';break;
                 case 0:line[j]='2';break;
                 case -1:line[j]='0';break;
@@ -441,7 +530,7 @@ int MainWindow::is_win(){
             }
 
             for(int j = 0;j<i+1;j++){
-                switch(chessBoard[len-(i-j)][len-j]){
+                switch(chessboard[len-(i-j)][len-j]){
                 case 1:line[j]='1';break;
                 case 0:line[j]='2';break;
                 case -1:line[j]='0';break;
@@ -1880,10 +1969,10 @@ void MainWindow::computer(){
     MatchState currentState;
     for (int i = 0; i < 15 * 15; ++i)
     {
-        currentState.state[i / 15][i % 15] = chessBoard[i/15][i%15];
+        currentState.state[i / 15][i % 15] = chessboard[i/15][i%15];
     }
     miniMaxSearchForFive(currentState,r,c);
-    this->chessBoard[r][c] = -1;
+    this->chessboard[r][c] = -1;
 }
 
 
