@@ -68,7 +68,10 @@ void MainWindow::setupMenuBar(void)
     // add action
     const QIcon newIcon = QIcon::fromTheme("document-new", QIcon(":/icon/new.png"));
     QAction *newGame = new QAction(newIcon, tr("New Game"), GameMenu);
-    QAction *openGame = new QAction(tr("Open Game"), GameMenu);
+
+    const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/icon/open.png"));
+    QAction *openGame = new QAction(openIcon, tr("Open Game"), GameMenu);
+
     const QIcon saveIcon = QIcon::fromTheme("document-save", QIcon(":/icon/save.png"));
     QAction *saveGame = new QAction(saveIcon, tr("Save Game"), GameMenu);
     QAction *quitGame = new QAction(tr("Quit Game"), GameMenu);
@@ -88,6 +91,7 @@ void MainWindow::setupMenuBar(void)
 
     // set game toolbar
     GameToolBar->addAction(newGame);
+    GameToolBar->addAction(openGame);
     GameToolBar->addAction(saveGame);
 
     /// set mode menu
@@ -179,12 +183,26 @@ void MainWindow::openGame(void)
         }
         QTextStream in(&file);
 
-        stringstream ss;
+
         QString qstr;
         string str;
-        qstr = in.readLine();
+        int tmp_i;
+        //qstr = in.readLine();
+        qstr = in.readAll();
         str = qstr.toStdString();
-
+        istringstream iss(str);
+        cout << str << endl;
+        for (int j = 0; j < 15; j++)
+        {
+            for (int i = 0; i < 15; i++)
+            {
+                iss >> tmp_i;
+                cout << tmp_i << " ";
+                chessboard[i][j] = tmp_i;
+            }
+            cout << endl;
+        }
+        this->update();
         //ss << in.readAll();
         cout << str << endl;
         file.close();
