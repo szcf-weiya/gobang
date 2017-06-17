@@ -46,6 +46,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             chessboard[i][j] = 0;
     game.getStatus(chessboard);
     setupMenuBar();
+
+    ui->radioType->setChecked(true);
     //setupStatus();
     // player first
     g_player->timerStart();
@@ -122,6 +124,22 @@ void MainWindow::setupMenuBar(void)
 
     // set menubar
     setMenuBar(MenuBar);
+}
+
+void MainWindow::on_radioType_clicked()
+{
+    /*
+    bool radio_sel = ui->radioType->isChecked();
+    if (radio_sel)
+    {
+        ui->radioType->setChecked(false); // two player
+    }
+    else
+    {
+        ui->radioType->setChecked(true); // player vs. computer
+    }
+    */
+    this->newGame();
 }
 
 void MainWindow::setupStatus()
@@ -407,7 +425,14 @@ void MainWindow::mousePressEvent(QMouseEvent *mouseEvent)
         //ui->timePlayer->setText(g_qstr);
         this->update();
         g_computer->timerStart();
-        computer();
+        if (ui->radioType->isChecked())
+        {
+            computer();
+        }
+        else
+        {
+            this->chessboard[int((x-X)*1.0/CHECK_WIDTH+0.5)][int((y-Y)*1.0/CHECK_WIDTH+0.5)] = (this->chessCounts%2 == 1)?1:-1;
+        }
         g_computer->timerStop();
         g_timer = g_computer->getTimer();
         g_oss.str("");
@@ -1272,17 +1297,7 @@ int guarantee(const MatchState& current_state, int& r, int& c)
             //如果发现有冲四的现象，那么就必须拦截
             if (cnt1 == 4 && (zero1 && zero2))
             {
-                if (current_state.state[i][j] == 1)
-                    priority = 10;
-                else
-                    priority = 5;
-                r = row1;
-                c = col1;
-            }
-            //虽然没有冲四，但是也不能够置之不理的情境
-            else if (cnt1 == 4 && (zero1 || zero2))
-            {
-                if (zero1 == 1)
+                if (priority <= 5)
                 {
                     if (current_state.state[i][j] == 1)
                         priority = 10;
@@ -1291,50 +1306,84 @@ int guarantee(const MatchState& current_state, int& r, int& c)
                     r = row1;
                     c = col1;
                 }
+            }
+            //虽然没有冲四，但是也不能够置之不理的情境
+            else if (cnt1 == 4 && (zero1 || zero2))
+            {
+                if (zero1 == 1)
+                {
+                    if (priority <= 5)
+                    {
+                        if (current_state.state[i][j] == 1)
+                            priority = 10;
+                        else
+                            priority = 5;
+                        r = row1;
+                        c = col1;
+                    }
+                }
                 else
                 {
-                    if (current_state.state[i][j] == 1)
-                        priority = 10;
-                    else
-                        priority = 5;
-                    r = row2;
-                    c = col2;
+                    if (priority <= 5)
+                    {
+                        if (current_state.state[i][j] == 1)
+                            priority = 10;
+                        else
+                            priority = 5;
+                        r = row2;
+                        c = col2;
+                    }
                 }
             }
             //出现双三的情况
             else if (cnt1 == 3 && (zero1 && zero2))
             {
-                r = row1;
-                c = col1;
-                //如果是自己的双三情况出现，应该首先攻占，优先度高一点
-                if (current_state.state[i][j] == 1)
-                    priority = 4;
-                else
-                    priority = 3;
+                if (priority <= 3)
+                {
+                    r = row1;
+                    c = col1;
+                    //如果是自己的双三情况出现，应该首先攻占，优先度高一点
+                    if (current_state.state[i][j] == 1)
+                        priority = 4;
+                    else
+                        priority = 3;
+                }
             }
             else if (cnt2 == 4)
             {
-                r = row3;
-                c = col3;
-                priority = 10;
+                if (priority <= 10)
+                {
+                    r = row3;
+                    c = col3;
+                    priority = 10;
+                }
             }
             else if (cnt2 == 3 && (zero3 && zero4))
             {
-                r = row3;
-                c = col3;
-                priority = 4;
+                if (priority <= 4)
+                {
+                    r = row3;
+                    c = col3;
+                    priority = 4;
+                }
             }
             else if (cnt3 == 4)
             {
-                r = row4;
-                c = col4;
-                priority = 5;
+                if (priority <= 5)
+                {
+                    r = row4;
+                    c = col4;
+                    priority = 5;
+                }
             }
             else if (cnt3 == 3 && (zero5 && zero6))
             {
-                r = row4;
-                c = col4;
-                priority = 4;
+                if (priority <= 4)
+                {
+                    r = row4;
+                    c = col4;
+                    priority = 4;
+                }
             }
 
 
@@ -1440,7 +1489,7 @@ int guarantee(const MatchState& current_state, int& r, int& c)
                     break;
                 }
             }
-            for (int k = i + 1; k <= 15; k++)
+            for (int k = i + 1; k < 15; k++)
             {
                 if (current_state.state[k][j] != current_state.state[i][j] && current_state.state[i][j] != 0)
                 {
@@ -1458,17 +1507,7 @@ int guarantee(const MatchState& current_state, int& r, int& c)
             //如果发现有冲四的现象，那么就必须拦截
             if (cnt1 == 4 && (zero1 && zero2))
             {
-                if (current_state.state[i][j] == 1)
-                    priority = 10;
-                else
-                    priority = 5;
-                r = row1;
-                c = col1;
-            }
-            //虽然没有冲四，但是也不能够置之不理的情境
-            else if (cnt1 == 4 && (zero1 || zero2))
-            {
-                if (zero1 == 1)
+                if (priority <= 5)
                 {
                     if (current_state.state[i][j] == 1)
                         priority = 10;
@@ -1477,50 +1516,81 @@ int guarantee(const MatchState& current_state, int& r, int& c)
                     r = row1;
                     c = col1;
                 }
-                else
+            }
+            //虽然没有冲四，但是也不能够置之不理的情境
+            else if (cnt1 == 4 && (zero1 || zero2))
+            {
+                if (priority <= 5)
                 {
-                    if (current_state.state[i][j] == 1)
-                        priority = 10;
+                    if (zero1 == 1)
+                    {
+                        if (current_state.state[i][j] == 1)
+                            priority = 10;
+                        else
+                            priority = 5;
+                        r = row1;
+                        c = col1;
+                    }
                     else
-                        priority = 5;
-                    r = row2;
-                    c = col2;
+                    {
+                        if (current_state.state[i][j] == 1)
+                            priority = 10;
+                        else
+                            priority = 5;
+                        r = row2;
+                        c = col2;
+                    }
                 }
             }
             //出现双三的情况
             else if (cnt1 == 3 && (zero1 && zero2))
             {
-                r = row1;
-                c = col1;
-                //如果是自己的双三情况出现，应该首先攻占，优先度高一点
-                if (current_state.state[i][j] == 1)
-                    priority = 4;
-                else
-                    priority = 3;
+                if (priority <= 3)
+                {
+                    //如果是自己的双三情况出现，应该首先攻占，优先度高一点
+                    if (current_state.state[i][j] == 1)
+                        priority = 4;
+                    else
+                        priority = 3;
+                    r = row1;
+                    c = col1;
+                }
             }
             else if (cnt2 == 4)
             {
-                r = row3;
-                c = col3;
-                priority = 10;
+                if (priority <= 10)
+                {
+                    r = row3;
+                    c = col3;
+                    priority = 10;
+                }
             }
             else if (cnt2 == 3 && (zero3 && zero4))
             {
-                r = row3;
-                c = col3;
-                priority = 4;
+                if (priority <= 4)
+                {
+                    r = row3;
+                    c = col3;
+                    priority = 4;
+                }
             }
             else if (cnt3 == 4)
             {
-                r = row4;
-                c = col4;
-                priority = 5;
+                if (priority <= 5)
+                {
+                    r = row4;
+                    c = col4;
+                    priority = 5;
+                }
             }
             else if (cnt3 == 3 && (zero5 && zero6))
             {
-                r = row4;
-                c = col4;
-                priority = 4;
+                if (priority <= 4)
+                {
+                    r = row4;
+                    c = col4;
+                    priority = 4;
+                }
             }
 
             //对角线方向检测
@@ -1669,17 +1739,7 @@ int guarantee(const MatchState& current_state, int& r, int& c)
             //如果发现有冲四的现象，那么就必须拦截
             if (cnt1 == 4 && (zero1 && zero2))
             {
-                if (current_state.state[i][j] == 1)
-                    priority = 10;
-                else
-                    priority = 5;
-                r = row1;
-                c = col1;
-            }
-            //虽然没有冲四，但是也不能够置之不理的情境
-            else if (cnt1 == 4 && (zero1 || zero2))
-            {
-                if (zero1 == 1)
+                if (priority <= 5)
                 {
                     if (current_state.state[i][j] == 1)
                         priority = 10;
@@ -1688,50 +1748,81 @@ int guarantee(const MatchState& current_state, int& r, int& c)
                     r = row1;
                     c = col1;
                 }
-                else
+            }
+            //虽然没有冲四，但是也不能够置之不理的情境
+            else if (cnt1 == 4 && (zero1 || zero2))
+            {
+                if (priority <= 5)
                 {
-                    if (current_state.state[i][j] == 1)
-                        priority = 10;
+                    if (zero1 == 1)
+                    {
+                        if (current_state.state[i][j] == 1)
+                            priority = 10;
+                        else
+                            priority = 5;
+                        r = row1;
+                        c = col1;
+                    }
                     else
-                        priority = 5;
-                    r = row2;
-                    c = col2;
+                    {
+                        if (current_state.state[i][j] == 1)
+                            priority = 10;
+                        else
+                            priority = 5;
+                        r = row2;
+                        c = col2;
+                    }
                 }
             }
             //出现双三的情况
             else if (cnt1 == 3 && (zero1 && zero2))
             {
-                r = row1;
-                c = col1;
-                //如果是自己的双三情况出现，应该首先攻占，优先度高一点
-                if (current_state.state[i][j] == 1)
-                    priority = 4;
-                else
-                    priority = 3;
+                if (priority <= 3)
+                {
+                    //如果是自己的双三情况出现，应该首先攻占，优先度高一点
+                    if (current_state.state[i][j] == 1)
+                        priority = 4;
+                    else
+                        priority = 3;
+                    r = row1;
+                    c = col1;
+                }
             }
             else if (cnt2 == 4)
             {
-                r = row3;
-                c = col3;
-                priority = 10;
+                if (priority <= 10)
+                {
+                    r = row3;
+                    c = col3;
+                    priority = 10;
+                }
             }
             else if (cnt2 == 3 && (zero3 && zero4))
             {
-                r = row3;
-                c = col3;
-                priority = 4;
+                if (priority <= 4)
+                {
+                    r = row3;
+                    c = col3;
+                    priority = 4;
+                }
             }
             else if (cnt3 == 4)
             {
-                r = row4;
-                c = col4;
-                priority = 5;
+                if (priority <= 5)
+                {
+                    r = row4;
+                    c = col4;
+                    priority = 5;
+                }
             }
             else if (cnt3 == 3 && (zero5 && zero6))
             {
-                r = row4;
-                c = col4;
-                priority = 4;
+                if (priority <= 4)
+                {
+                    r = row4;
+                    c = col4;
+                    priority = 4;
+                }
             }
 
             cnt1 = 1;
@@ -1880,17 +1971,7 @@ int guarantee(const MatchState& current_state, int& r, int& c)
             //如果发现有冲四的现象，那么就必须拦截
             if (cnt1 == 4 && (zero1 && zero2))
             {
-                if (current_state.state[i][j] == 1)
-                    priority = 10;
-                else
-                    priority = 5;
-                r = row1;
-                c = col1;
-            }
-            //虽然没有冲四，但是也不能够置之不理的情境
-            else if (cnt1 == 4 && (zero1 || zero2))
-            {
-                if (zero1 == 1)
+                if (priority <= 5)
                 {
                     if (current_state.state[i][j] == 1)
                         priority = 10;
@@ -1899,53 +1980,87 @@ int guarantee(const MatchState& current_state, int& r, int& c)
                     r = row1;
                     c = col1;
                 }
-                else
+            }
+            //虽然没有冲四，但是也不能够置之不理的情境
+            else if (cnt1 == 4 && (zero1 || zero2))
+            {
+                if (priority <= 5)
                 {
-                    if (current_state.state[i][j] == 1)
-                        priority = 10;
+                    if (zero1 == 1)
+                    {
+                        if (current_state.state[i][j] == 1)
+                            priority = 10;
+                        else
+                            priority = 5;
+                        r = row1;
+                        c = col1;
+                    }
                     else
-                        priority = 5;
-                    r = row2;
-                    c = col2;
+                    {
+                        if (current_state.state[i][j] == 1)
+                            priority = 10;
+                        else
+                            priority = 5;
+                        r = row2;
+                        c = col2;
+                    }
                 }
             }
             //出现双三的情况
             else if (cnt1 == 3 && (zero1 && zero2))
             {
-                r = row1;
-                c = col1;
-                //如果是自己的双三情况出现，应该首先攻占，优先度高一点
-                if (current_state.state[i][j] == 1)
-                    priority = 4;
-                else
-                    priority = 3;
+                if (priority <= 3)
+                {
+                    //如果是自己的双三情况出现，应该首先攻占，优先度高一点
+                    if (current_state.state[i][j] == 1)
+                        priority = 4;
+                    else
+                        priority = 3;
+                    r = row1;
+                    c = col1;
+                }
             }
             else if (cnt2 == 4)
             {
-                r = row3;
-                c = col3;
-                priority = 10;
+                if (priority <= 10)
+                {
+                    r = row3;
+                    c = col3;
+                    priority = 10;
+                }
             }
             else if (cnt2 == 3 && (zero3 && zero4))
             {
-                r = row3;
-                c = col3;
-                priority = 4;
+                if (priority <= 4)
+                {
+                    r = row3;
+                    c = col3;
+                    priority = 4;
+                }
             }
             else if (cnt3 == 4)
             {
-                r = row4;
-                c = col4;
-                priority = 5;
+                if (priority <= 5)
+                {
+                    r = row4;
+                    c = col4;
+                    priority = 5;
+                    cout << r << endl;
+                    cout << c << endl;
+                }
             }
             else if (cnt3 == 3 && (zero5 && zero6))
             {
-                r = row4;
-                c = col4;
-                priority = 4;
+                if (priority <= 4)
+                {
+                    r = row4;
+                    c = col4;
+                    priority = 4;
+                }
             }
         }
     }
+
     if (priority != 0)
         return priority;
     return 0;

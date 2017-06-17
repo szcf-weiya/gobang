@@ -58,6 +58,8 @@ protected slots:
     void timeUpdate(void);
     void updateTimer1(const QString);
     void updateTimer2(const QString);
+    void on_radioType_clicked();
+
 
 private:
     int xPressed;
